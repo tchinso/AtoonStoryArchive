@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101928">
+  <meta name="description" content="아틀리에 온라인의 메인·사이드 스토리를 한국어로 감상하는 비주얼노벨형 아카이브">
+  <title>아틀리에 온라인 스토리 아카이브</title>
+  <link rel="stylesheet" href="css/story.css">
+  <script defer src="js/story.js"></script>
+</head>
+<body>
+  <div id="app" class="app-shell" data-sidebar="open">
+    <aside id="library" class="library" aria-label="스토리 목록">
+      <header class="library__header">
+        <button id="close-library" class="icon-button library__close" type="button" aria-label="스토리 목록 닫기">×</button>
+        <p class="eyebrow">ATELIER ONLINE</p>
+        <h1>Story<br>Archive</h1>
+        <p class="library__subtitle">메인과 사이드 이야기만 모은 한국어 아카이브</p>
+      </header>
+
+      <div class="library__tools">
+        <div class="story-tabs" role="tablist" aria-label="스토리 종류">
+          <button class="story-tab is-active" type="button" role="tab" aria-selected="true" data-category="main">메인 <span id="main-count">—</span></button>
+          <button class="story-tab" type="button" role="tab" aria-selected="false" data-category="side">사이드 <span id="side-count">—</span></button>
+        </div>
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <span class="sr-only">스토리 검색</span>
+          <input id="story-search" type="search" placeholder="제목 또는 장 검색" autocomplete="off">
+        </label>
+      </div>
+
+      <nav id="story-list" class="story-list" aria-live="polite">
+        <p class="list-loading">이야기 목록을 정리하고 있어요…</p>
+      </nav>
+
+      <footer class="library__footer">
+        <span>여성 주인공 음성</span>
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>한국어 · 日本語</span>
+      </footer>
+    </aside>
+
+    <button id="sidebar-scrim" class="sidebar-scrim" type="button" aria-label="스토리 목록 닫기"></button>
+
+    <main id="reader" class="reader">
+      <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+        <div class="welcome__orb" aria-hidden="true"></div>
+        <div class="welcome__content">
+          <p class="eyebrow">STORY VIEWER</p>
+          <h2 id="welcome-title">잊힌 연금술사의<br><em>이야기를 다시 펼치다</em></h2>
+          <p>메인과 사이드 스토리, 배경 음악, 일러스트와 캐릭터 음성을 한 장면씩 감상하세요.</p>
+          <button id="open-first-story" class="primary-button" type="button">첫 이야기 시작 <span aria-hidden="true">→</span></button>
+          <dl class="archive-stats" aria-label="아카이브 통계">
+            <div><dt id="story-total">407</dt><dd>이야기</dd></div>
+            <div><dt>♀</dt><dd>여성 주인공</dd></div>
+            <div><dt>KO</dt><dd>한국어 번역</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="stage" class="stage" hidden aria-label="비주얼노벨 장면">
+        <div id="scene-background" class="scene-background" aria-hidden="true"></div>
+        <div class="scene-vignette" aria-hidden="true"></div>
+        <div class="scene-grain" aria-hidden="true"></div>
+        <img id="still-image" class="still-image" alt="장면 일러스트" hidden>
+        <img id="character-image" class="character-image" alt="" hidden>
+
+        <header class="reader-bar">
+          <button id="open-library" class="reader-bar__menu icon-button" type="button" aria-label="스토리 목록 열기">☰</button>
+          <div class="reader-bar__title">
+            <span id="story-kind">메인 · 2장</span>
+            <strong id="story-title">만남</strong>
+          </div>
+          <div class="reader-bar__actions">
+            <button id="toggle-bgm" class="pill-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">♪</span><span class="button-label">BGM</span></button>
+            <button id="toggle-voice" class="pill-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">◖</span><span class="button-label">음성</span></button>
+            <button id="open-log" class="pill-button" type="button"><span aria-hidden="true">☷</span><span class="button-label">로그</span></button>
+            <button id="open-settings" class="icon-button" type="button" aria-label="설정">⚙</button>
+            <button id="toggle-fullscreen" class="icon-button" type="button" aria-label="전체 화면">⛶</button>
+          </div>
+        </header>
+
+        <div id="choice-panel" class="choice-panel" hidden>
+          <p>어떻게 대답할까요?</p>
+          <div id="choice-list" class="choice-list"></div>
+        </div>
+
+        <article id="dialogue-panel" class="dialogue-panel" aria-live="polite">
+          <div class="speaker-row">
+            <p id="speaker-name" class="speaker-name">소렐</p>
+            <span id="voice-indicator" class="voice-indicator" hidden>VOICE</span>
+          </div>
+          <p id="dialogue-ko" class="dialogue dialogue--ko"></p>
+          <p id="dialogue-ja" class="dialogue dialogue--ja" hidden></p>
+          <div class="dialogue-controls">
+            <span id="scene-progress">1 / 1</span>
+            <div>
+              <button id="previous-line" class="text-button" type="button">이전</button>
+              <button id="toggle-auto" class="text-button" type="button" aria-pressed="false">AUTO</button>
+              <button id="next-line" class="next-button" type="button" aria-label="다음 대사">⌄</button>
+            </div>
+          </div>
+        </article>
+
+        <section id="story-complete" class="story-complete" hidden>
+          <p class="eyebrow">STORY COMPLETE</p>
+          <h2>이야기의 끝</h2>
+          <p id="complete-title"></p>
+          <div>
+            <button id="replay-story" class="secondary-button" type="button">다시 보기</button>
+            <button id="next-story" class="primary-button" type="button">다음 이야기 <span aria-hidden="true">→</span></button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="settings-dialog" class="modal settings-modal">
+    <form method="dialog">
+      <header>
+        <div><p class="eyebrow">VIEWER</p><h2>감상 설정</h2></div>
+        <button class="icon-button" value="close" aria-label="설정 닫기">×</button>
+      </header>
+      <label class="field-label">주인공 이름<input id="player-name" type="text" maxlength="16" value="주인공"></label>
+      <label class="range-label"><span>배경 음악 <output id="bgm-volume-output">45%</output></span><input id="bgm-volume" type="range" min="0" max="100" value="45"></label>
+      <label class="range-label"><span>캐릭터 음성 <output id="voice-volume-output">85%</output></span><input id="voice-volume" type="range" min="0" max="100" value="85"></label>
+      <label class="switch-label"><span><strong>일본어 원문 함께 보기</strong><small>한국어 번역 아래 원문을 표시합니다.</small></span><input id="show-original" type="checkbox" role="switch"></label>
+      <label class="switch-label"><span><strong>대사 음성 자동 재생</strong><small>장면이 바뀌면 연결된 음성을 재생합니다.</small></span><input id="autoplay-voice" type="checkbox" role="switch" checked></label>
+    </form>
+  </dialog>
+
+  <dialog id="log-dialog" class="modal log-modal">
+    <form method="dialog">
+      <header>
+        <div><p class="eyebrow">BACKLOG</p><h2>대화 기록</h2></div>
+        <button class="icon-button" value="close" aria-label="대화 기록 닫기">×</button>
+      </header>
+      <div id="dialogue-log" class="dialogue-log"><p class="log-empty">아직 표시된 대사가 없습니다.</p></div>
+    </form>
+  </dialog>
+
+  <div id="orientation-tip" class="orientation-tip" role="status">
+    <span aria-hidden="true">↻</span>
+    <strong>가로로 돌리면 이야기가 더 넓게 보여요</strong>
+    <button id="dismiss-orientation" type="button">그대로 보기</button>
+  </div>
+</body>
+</html>
