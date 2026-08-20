@@ -21,7 +21,8 @@
 
       <div class="library__tools">
         <div class="story-tabs" role="tablist" aria-label="스토리 종류">
-          <button class="story-tab is-active" type="button" role="tab" aria-selected="true" data-category="main">메인 <span id="main-count">—</span></button>
+          <button class="story-tab is-active" type="button" role="tab" aria-selected="true" data-category="reading">통합 <span id="reading-count">—</span></button>
+          <button class="story-tab" type="button" role="tab" aria-selected="false" data-category="main">메인 <span id="main-count">—</span></button>
           <button class="story-tab" type="button" role="tab" aria-selected="false" data-category="side">사이드 <span id="side-count">—</span></button>
         </div>
         <label class="search-box">
@@ -108,6 +109,7 @@
           <p class="eyebrow">STORY COMPLETE</p>
           <h2>이야기의 끝</h2>
           <p id="complete-title"></p>
+          <p id="complete-next" class="story-complete__next"></p>
           <div>
             <button id="replay-story" class="secondary-button" type="button">다시 보기</button>
             <button id="next-story" class="primary-button" type="button">다음 이야기 <span aria-hidden="true">→</span></button>

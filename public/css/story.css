@@ -198,7 +198,7 @@ input:focus-visible {
 
 .story-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -277,6 +277,25 @@ input:focus-visible {
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.story-list__summary {
+  margin: -3px 7px 11px;
+  color: #8f9aad;
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.story-list__category {
+  width: fit-content;
+  margin: 0 7px 8px;
+  padding: 3px 7px;
+  border: 1px solid rgba(230, 189, 115, 0.18);
+  border-radius: 999px;
+  color: #b8a072;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .story-card {
@@ -814,6 +833,14 @@ input:focus-visible {
   color: var(--muted);
 }
 
+.story-complete__next {
+  max-width: min(520px, 86vw);
+  margin: -14px auto 28px !important;
+  color: var(--gold-soft) !important;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
 .story-complete > div {
   display: flex;
   justify-content: center;
@@ -974,6 +1001,8 @@ input[type="range"] {
   :root { --library-width: 320px; }
   .button-label { display: none; }
   .pill-button { width: 40px; padding: 0; justify-content: center; }
+  .story-tab { font-size: 0.75rem; }
+  .story-tab span { min-width: 21px; margin-left: 2px; }
 }
 
 @media (max-width: 860px), (max-height: 590px) {

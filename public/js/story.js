@@ -25,6 +25,8 @@
     choiceList: $('#choice-list'),
     complete: $('#story-complete'),
     completeTitle: $('#complete-title'),
+    completeNext: $('#complete-next'),
+    nextStory: $('#next-story'),
     log: $('#dialogue-log'),
     settingsDialog: $('#settings-dialog'),
     logDialog: $('#log-dialog'),
@@ -44,7 +46,12 @@
     data: null,
     stories: [],
     filtered: [],
-    category: 'main',
+    category: 'reading',
+    readingPlan: null,
+    readingStories: [],
+    readingSectionByChapter: new Map(),
+    readingIndexById: new Map(),
+    categoryIndexById: new Map(),
     story: null,
     queue: [],
     cursor: 0,
@@ -95,6 +102,7 @@
   }
 
   function categoryLabel(category) {
+    if (category === 'reading') return '통합 순서';
     return category === 'main' ? '메인' : '사이드';
   }
 
@@ -106,13 +114,37 @@
     return window.innerWidth <= 860 || window.innerHeight <= 590;
   }
 
+  function storyListForCategory(category = state.category) {
+    if (category === 'reading') return state.readingStories;
+    return state.readingStories.filter((story) => story.category === category);
+  }
+
+  function storySearchText(story) {
+    const section = state.readingSectionByChapter.get(story.chapter);
+    return [
+      story.title.ko,
+      story.title.ja,
+      story.description.ko,
+      story.description.ja,
+      section?.label,
+      section?.summary,
+      story.id,
+      `${story.chapter}장`,
+    ].join(' ');
+  }
+
+  function storyCardNumber(story) {
+    const index = state.category === 'reading'
+      ? state.readingIndexById.get(story.id)
+      : state.categoryIndexById.get(story.id);
+    return String(Number.isInteger(index) ? index + 1 : 0).padStart(2, '0');
+  }
+
   function renderStoryList() {
     const query = elements.search.value.trim().toLocaleLowerCase('ko');
-    state.filtered = state.stories.filter((story) => {
-      if (story.category !== state.category) return false;
+    state.filtered = storyListForCategory().filter((story) => {
       if (!query) return true;
-      return [story.title.ko, story.title.ja, story.description.ko, story.id, `${story.chapter}장`]
-        .some((value) => String(value || '').toLocaleLowerCase('ko').includes(query));
+      return storySearchText(story).toLocaleLowerCase('ko').includes(query);
     });
 
     elements.storyList.replaceChildren();
@@ -125,13 +157,31 @@
     }
 
     let chapter = null;
+    let previousCategory = null;
     for (const story of state.filtered) {
       if (chapter !== story.chapter) {
         chapter = story.chapter;
+        previousCategory = null;
+        const section = state.readingSectionByChapter.get(chapter);
         const heading = document.createElement('p');
         heading.className = 'story-list__chapter';
-        heading.textContent = `${categoryLabel(story.category)} · CHAPTER ${story.chapter}`;
+        heading.textContent = state.category === 'reading'
+          ? section?.label || `CHAPTER ${story.chapter}`
+          : `${categoryLabel(story.category)} · CHAPTER ${story.chapter}`;
         elements.storyList.append(heading);
+        if (state.category === 'reading' && section?.summary) {
+          const summary = document.createElement('p');
+          summary.className = 'story-list__summary';
+          summary.textContent = section.summary;
+          elements.storyList.append(summary);
+        }
+      }
+
+      if (state.category === 'reading' && previousCategory !== story.category) {
+        const category = document.createElement('p');
+        category.className = 'story-list__category';
+        category.textContent = `${categoryLabel(story.category)} 스토리`;
+        elements.storyList.append(category);
       }
 
       const card = document.createElement('button');
@@ -142,10 +192,12 @@
         <span class="story-card__number">${String(story.number).padStart(2, '0')}</span>
         <span><strong></strong><small></small></span>
         <span class="story-card__arrow" aria-hidden="true">›</span>`;
-      card.querySelector('strong').textContent = story.title.ko;
+      card.querySelector('strong').textContent = story.title.ko || story.title.ja;
       card.querySelector('small').textContent = story.title.ja;
+      card.querySelector('.story-card__number').textContent = storyCardNumber(story);
       card.addEventListener('click', () => startStory(story.id));
       elements.storyList.append(card);
+      previousCategory = story.category;
     }
   }
 
@@ -411,6 +463,12 @@
     processUntilDisplay();
   }
 
+  function nextReadingStory() {
+    const index = state.readingIndexById.get(state.story?.id);
+    if (!Number.isInteger(index)) return null;
+    return state.readingStories[index + 1] || null;
+  }
+
   function showComplete() {
     stopVoice();
     stopAutoTimer();
@@ -419,6 +477,12 @@
     elements.choicePanel.hidden = true;
     elements.complete.hidden = false;
     elements.completeTitle.textContent = state.story.title.ko;
+    const next = nextReadingStory();
+    elements.nextStory.hidden = !next;
+    elements.nextStory.disabled = !next;
+    elements.completeNext.textContent = next
+      ? `통합 순서 다음: ${categoryLabel(next.category)} ${next.chapter}장 · ${next.title.ko}`
+      : '통합 읽기 순서를 모두 읽었습니다.';
     localStorage.setItem('atelier-story-last', state.story.id);
   }
 
@@ -438,6 +502,9 @@
     applyStill(null);
     elements.character.hidden = true;
     elements.complete.hidden = true;
+    elements.completeNext.textContent = '';
+    elements.nextStory.hidden = false;
+    elements.nextStory.disabled = false;
     elements.choicePanel.hidden = true;
     renderLog();
   }
@@ -447,13 +514,12 @@
     if (!story) return;
     resetScene();
     state.story = story;
-    state.category = story.category;
     state.queue = story.events.slice();
     state.cursor = 0;
     elements.welcome.hidden = true;
     elements.stage.hidden = false;
     elements.storyKind.textContent = `${categoryLabel(story.category)} · ${story.chapter}장`;
-    elements.storyTitle.textContent = story.title.ko;
+    elements.storyTitle.textContent = story.title.ko || story.title.ja;
     syncCategoryTabs();
     renderStoryList();
     if (updateHash) history.replaceState(null, '', `#/story/${encodeURIComponent(story.id)}`);
@@ -462,16 +528,102 @@
   }
 
   function startNextStory() {
-    if (!state.story) return;
-    const sameCategory = state.stories.filter((story) => story.category === state.story.category);
-    const current = sameCategory.findIndex((story) => story.id === state.story.id);
-    startStory(sameCategory[(current + 1) % sameCategory.length].id);
+    const next = nextReadingStory();
+    if (!next) return;
+    state.category = 'reading';
+    startStory(next.id);
   }
 
   function setCategory(category) {
     state.category = category;
     syncCategoryTabs();
     renderStoryList();
+  }
+
+  function configureReadingPlan(plan) {
+    if (!plan || !Array.isArray(plan.sections) || !plan.sections.length) {
+      throw new Error('통합 읽기 순서 데이터가 없습니다.');
+    }
+
+    const categoryOrder = Array.isArray(plan.categoryOrder) ? plan.categoryOrder : ['main', 'side'];
+    const categoryRank = new Map(categoryOrder.map((category, index) => [category, index]));
+    if (categoryRank.size !== 2 || !categoryRank.has('main') || !categoryRank.has('side')) {
+      throw new Error('통합 읽기 순서의 카테고리 규칙이 올바르지 않습니다.');
+    }
+
+    const chapterRank = new Map();
+    state.readingSectionByChapter = new Map();
+    plan.sections.forEach((section, index) => {
+      const chapter = Number(section.chapter);
+      if (!Number.isInteger(chapter) || chapterRank.has(chapter)) {
+        throw new Error('통합 읽기 순서의 장 정보가 중복되었거나 잘못되었습니다.');
+      }
+      chapterRank.set(chapter, index);
+      state.readingSectionByChapter.set(chapter, { ...section, chapter });
+    });
+
+    for (const story of state.stories) {
+      if (!chapterRank.has(story.chapter) || !categoryRank.has(story.category) || !Number.isFinite(Number(story.questId))) {
+        throw new Error(`통합 읽기 순서에 넣을 수 없는 이야기입니다: ${story.id}`);
+      }
+    }
+
+    state.readingStories = [...state.stories].sort((left, right) => (
+      chapterRank.get(left.chapter) - chapterRank.get(right.chapter)
+      || categoryRank.get(left.category) - categoryRank.get(right.category)
+      || Number(left.questId) - Number(right.questId)
+    ));
+
+    if (new Set(state.readingStories.map((story) => story.id)).size !== state.stories.length) {
+      throw new Error('통합 읽기 순서에 중복된 이야기가 있습니다.');
+    }
+
+    state.readingIndexById = new Map(state.readingStories.map((story, index) => [story.id, index]));
+    state.categoryIndexById = new Map();
+    for (const category of categoryOrder) {
+      state.readingStories
+        .filter((story) => story.category === category)
+        .forEach((story, index) => state.categoryIndexById.set(story.id, index));
+    }
+  }
+
+  function translationEntryAt(items, index, context) {
+    const entry = items?.[Number(index)];
+    if (!entry) throw new Error(`번역 대상이 없습니다: ${context}`);
+    return entry;
+  }
+
+  function applyEventTranslations(event, patch, context) {
+    if (typeof patch.ko === 'string') event.ko = patch.ko;
+    if (!patch.options) return;
+
+    for (const [optionIndex, optionPatch] of Object.entries(patch.options)) {
+      const option = translationEntryAt(event.options, optionIndex, `${context}.options[${optionIndex}]`);
+      if (typeof optionPatch.ko === 'string') option.ko = optionPatch.ko;
+      if (!optionPatch.events) continue;
+      for (const [eventIndex, eventPatch] of Object.entries(optionPatch.events)) {
+        const nested = translationEntryAt(option.events, eventIndex, `${context}.options[${optionIndex}].events[${eventIndex}]`);
+        applyEventTranslations(nested, eventPatch, `${context}.options[${optionIndex}].events[${eventIndex}]`);
+      }
+    }
+  }
+
+  function applyKoreanTranslations(data, translationFile) {
+    const patches = translationFile?.stories;
+    if (!patches || typeof patches !== 'object') return;
+
+    const storiesById = new Map(data.stories.map((story) => [story.id, story]));
+    for (const [storyId, patch] of Object.entries(patches)) {
+      const story = storiesById.get(storyId);
+      if (!story) throw new Error(`번역 대상 이야기가 없습니다: ${storyId}`);
+      if (typeof patch.title === 'string') story.title.ko = patch.title;
+      if (typeof patch.description === 'string') story.description.ko = patch.description;
+      if (!patch.events) continue;
+      for (const [eventIndex, eventPatch] of Object.entries(patch.events)) {
+        const event = translationEntryAt(story.events, eventIndex, `${storyId}.events[${eventIndex}]`);
+        applyEventTranslations(event, eventPatch, `${storyId}.events[${eventIndex}]`);
+      }
+    }
   }
 
   function syncControls() {
@@ -520,7 +672,7 @@
     $('#open-library').addEventListener('click', () => setSidebar(true));
     $('#close-library').addEventListener('click', () => setSidebar(false));
     $('#sidebar-scrim').addEventListener('click', () => setSidebar(false));
-    $('#open-first-story').addEventListener('click', () => startStory(state.stories[0]?.id));
+    $('#open-first-story').addEventListener('click', () => startStory(state.readingStories[0]?.id));
     $('#previous-line').addEventListener('click', (event) => { event.stopPropagation(); goPrevious(); });
     $('#next-line').addEventListener('click', (event) => { event.stopPropagation(); goNext(); });
     $('#toggle-auto').addEventListener('click', (event) => { event.stopPropagation(); toggleAuto(); });
@@ -594,10 +746,31 @@
     syncControls();
     setSidebar(!isCompact());
     try {
-      const response = await fetch('data/stories.json');
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      state.data = await response.json();
+      const [storyResponse, planResponse, translationResponse] = await Promise.all([
+        fetch('data/stories.json'),
+        fetch('data/reading-plan.json'),
+        fetch('data/ko-translations.json'),
+      ]);
+      if (!storyResponse.ok) throw new Error(`stories.json: HTTP ${storyResponse.status}`);
+      if (!planResponse.ok) throw new Error(`reading-plan.json: HTTP ${planResponse.status}`);
+      if (!translationResponse.ok) throw new Error(`ko-translations.json: HTTP ${translationResponse.status}`);
+      state.data = await storyResponse.json();
+      state.readingPlan = await planResponse.json();
+      const translationFile = await translationResponse.json();
+      applyKoreanTranslations(state.data, translationFile);
+      const translationPaths = Array.isArray(translationFile.files) ? translationFile.files : [];
+      const translationFiles = await Promise.all(translationPaths.map(async (path) => {
+        if (typeof path !== 'string' || !path.startsWith('translations/')) {
+          throw new Error('번역 파일 경로가 올바르지 않습니다.');
+        }
+        const response = await fetch(`data/${path}`);
+        if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+        return response.json();
+      }));
+      translationFiles.forEach((file) => applyKoreanTranslations(state.data, file));
       state.stories = state.data.stories;
+      configureReadingPlan(state.readingPlan);
+      $('#reading-count').textContent = state.readingStories.length;
       $('#main-count').textContent = state.data.meta.mainStories;
       $('#side-count').textContent = state.data.meta.sideStories;
       $('#story-total').textContent = state.data.meta.stories;
