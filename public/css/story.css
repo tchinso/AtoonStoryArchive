@@ -34,6 +34,13 @@ body {
   overflow: hidden;
 }
 
+@supports (height: 100dvh) {
+  html,
+  body {
+    min-height: 100dvh;
+  }
+}
+
 button,
 input {
   font: inherit;
@@ -69,6 +76,14 @@ input:focus-visible {
   display: grid;
   grid-template-columns: var(--library-width) minmax(0, 1fr);
   min-height: 100svh;
+}
+
+.app-shell[data-sidebar="closed"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell[data-sidebar="closed"] .library {
+  display: none;
 }
 
 .eyebrow {
@@ -588,7 +603,8 @@ input:focus-visible {
 }
 
 .reader-bar__menu {
-  display: none;
+  display: inline-grid;
+  flex: 0 0 auto;
 }
 
 .reader-bar__title {
@@ -639,6 +655,11 @@ input:focus-visible {
   color: var(--gold-soft);
 }
 
+.pill-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.36;
+}
+
 .dialogue-panel {
   position: absolute;
   z-index: 10;
@@ -655,6 +676,117 @@ input:focus-visible {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.04);
   cursor: pointer;
   backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.stage[data-dialogue="hidden"] .dialogue-panel {
+  display: none;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-panel,
+.stage[data-dialogue-style="youtube"] .dialogue-panel {
+  right: clamp(18px, 6vw, 88px);
+  bottom: clamp(26px, 8vh, 92px);
+  left: clamp(18px, 6vw, 88px);
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  text-align: center;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-panel::before,
+.stage[data-dialogue-style="youtube"] .dialogue-panel::before,
+.stage[data-dialogue-style="cinema"] .speaker-row,
+.stage[data-dialogue-style="youtube"] .speaker-row {
+  display: none;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue--ko,
+.stage[data-dialogue-style="cinema"] .dialogue--ja {
+  color: #fff;
+  text-shadow: 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 0 4px 12px rgba(0, 0, 0, 0.9);
+  -webkit-text-stroke: 0.35px #000;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue--ko {
+  max-width: 1100px;
+  margin: 0 auto;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue--ja {
+  margin: 8px auto 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.76rem;
+}
+
+.stage[data-dialogue-style="youtube"] .dialogue--ko,
+.stage[data-dialogue-style="youtube"] .dialogue--ja {
+  width: fit-content;
+  max-width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding: 0.2em 0.62em;
+  background: rgba(0, 0, 0, 0.88);
+  color: #fff;
+  line-height: 1.5;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.stage[data-dialogue-style="youtube"] .dialogue--ja {
+  margin-top: 5px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.74rem;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-controls,
+.stage[data-dialogue-style="youtube"] .dialogue-controls {
+  display: inline-flex;
+  min-height: 0;
+  margin-top: 13px;
+  padding: 2px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(4, 8, 14, 0.38);
+  opacity: 0.56;
+  transition: opacity 0.2s ease;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-panel:hover .dialogue-controls,
+.stage[data-dialogue-style="youtube"] .dialogue-panel:hover .dialogue-controls {
+  opacity: 0.95;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-controls > span,
+.stage[data-dialogue-style="youtube"] .dialogue-controls > span {
+  padding: 0 5px;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-controls .text-button,
+.stage[data-dialogue-style="youtube"] .dialogue-controls .text-button {
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.58rem;
+}
+
+.stage[data-dialogue-style="cinema"] .dialogue-controls .next-button,
+.stage[data-dialogue-style="youtube"] .dialogue-controls .next-button {
+  width: 23px;
+  height: 23px;
+  margin-left: 4px;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  animation: none;
 }
 
 .dialogue-panel::before {
@@ -868,6 +1000,11 @@ input:focus-visible {
   padding: 26px;
 }
 
+.settings-modal form {
+  max-height: min(760px, calc(100svh - 32px));
+  overflow: auto;
+}
+
 .modal header {
   display: flex;
   margin-bottom: 26px;
@@ -896,12 +1033,22 @@ input:focus-visible {
   font-weight: 750;
 }
 
-.field-label input {
+.field-label input,
+.field-label select {
   height: 46px;
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+}
+
+.field-label select {
+  cursor: pointer;
+}
+
+.field-label option {
+  background: #111d2e;
   color: var(--ink);
 }
 
@@ -1066,7 +1213,7 @@ input[type="range"] {
     min-height: 36px;
   }
 
-  .reader-bar__actions .pill-button:nth-child(3) {
+  .reader-bar__actions .log-button {
     display: none;
   }
 
@@ -1182,17 +1329,31 @@ input[type="range"] {
   }
 
   .character-image {
+    top: calc(64px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 50%;
+    right: auto;
     width: 110vw;
     max-width: none;
-    height: 77vh;
+    height: 56vh;
+    object-position: center top;
+  }
+
+  .still-image {
+    top: calc(64px + env(safe-area-inset-top));
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: 56vh;
+    background: transparent;
   }
 
   .reader-bar__title strong {
     max-width: 31vw;
   }
 
-  .reader-bar__actions .pill-button:nth-child(1),
-  .reader-bar__actions .pill-button:nth-child(2) {
+  .reader-bar__actions .bgm-button,
+  .reader-bar__actions .voice-button {
     display: none;
   }
 
@@ -1200,8 +1361,35 @@ input[type="range"] {
     min-height: 210px;
   }
 
+  .stage[data-dialogue-style="cinema"] .dialogue-panel,
+  .stage[data-dialogue-style="youtube"] .dialogue-panel {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+
+  body:not(.orientation-dismissed) .stage[data-dialogue-style="cinema"] .dialogue-panel,
+  body:not(.orientation-dismissed) .stage[data-dialogue-style="youtube"] .dialogue-panel {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
   .choice-panel {
     padding: 90px 20px 245px;
+  }
+}
+
+@supports (height: 100dvh) {
+  .app-shell,
+  .reader,
+  .welcome,
+  .stage {
+    min-height: 100dvh;
+  }
+
+  .library {
+    height: 100dvh;
+  }
+
+  .settings-modal form {
+    max-height: min(760px, calc(100dvh - 32px));
   }
 }
 

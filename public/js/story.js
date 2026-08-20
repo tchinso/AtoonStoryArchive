@@ -6,6 +6,7 @@
   const elements = {
     app: $('#app'),
     library: $('#library'),
+    openLibrary: $('#open-library'),
     storyList: $('#story-list'),
     search: $('#story-search'),
     welcome: $('#welcome'),
@@ -21,6 +22,8 @@
     ja: $('#dialogue-ja'),
     progress: $('#scene-progress'),
     voiceIndicator: $('#voice-indicator'),
+    replayVoice: $('#replay-voice'),
+    toggleDialogue: $('#toggle-dialogue'),
     choicePanel: $('#choice-panel'),
     choiceList: $('#choice-list'),
     complete: $('#story-complete'),
@@ -38,6 +41,8 @@
     voiceVolume: 85,
     showOriginal: false,
     autoplayVoice: true,
+    dialogueVisible: true,
+    dialogueStyle: 'novel',
     bgmEnabled: true,
     voiceEnabled: true,
   };
@@ -107,7 +112,10 @@
   }
 
   function setSidebar(open) {
-    elements.app.dataset.sidebar = open ? 'open' : 'closed';
+    const isOpen = Boolean(open);
+    elements.app.dataset.sidebar = isOpen ? 'open' : 'closed';
+    elements.openLibrary.setAttribute('aria-expanded', String(isOpen));
+    elements.openLibrary.setAttribute('aria-label', isOpen ? '스토리 목록 닫기' : '스토리 목록 열기');
   }
 
   function isCompact() {
@@ -220,6 +228,16 @@
     elements.voiceIndicator.classList.remove('is-playing');
   }
 
+  function syncVoiceReplayButton() {
+    const event = state.currentEvent;
+    const canReplay = Boolean(event?.voice && ['talk', 'player'].includes(event.type));
+    elements.replayVoice.disabled = !canReplay || !state.settings.voiceEnabled;
+    elements.replayVoice.setAttribute(
+      'aria-label',
+      canReplay ? '현재 대사 음성 다시 재생' : '현재 대사에 재생할 음성이 없습니다',
+    );
+  }
+
   function applyBackground(image, black = false) {
     state.background = image || null;
     state.backgroundBlack = Boolean(black);
@@ -251,10 +269,10 @@
     bgmAudio.play().catch(() => {});
   }
 
-  function playVoice(audio) {
+  function playVoice(audio, force = false) {
     stopVoice();
     elements.voiceIndicator.hidden = !audio;
-    if (!audio || !state.settings.voiceEnabled || !state.settings.autoplayVoice) {
+    if (!audio || !state.settings.voiceEnabled || (!force && !state.settings.autoplayVoice)) {
       if (state.auto) scheduleAutoAdvance(1900);
       return;
     }
@@ -265,6 +283,30 @@
       elements.voiceIndicator.classList.remove('is-playing');
       if (state.auto) scheduleAutoAdvance(2100);
     });
+  }
+
+  function replayVoice() {
+    const audio = state.currentEvent?.voice;
+    if (!audio || !state.settings.voiceEnabled) return;
+    playVoice(audio, true);
+  }
+
+  function syncDialogueVisibility() {
+    const visible = Boolean(state.settings.dialogueVisible);
+    elements.stage.dataset.dialogue = visible ? 'visible' : 'hidden';
+    elements.toggleDialogue.classList.toggle('is-active', visible);
+    elements.toggleDialogue.setAttribute('aria-pressed', String(visible));
+    elements.toggleDialogue.setAttribute('aria-label', visible ? '대사 숨기기' : '대사 표시');
+  }
+
+  function syncDialogueStyle() {
+    const availableStyles = ['novel', 'cinema', 'youtube'];
+    const style = availableStyles.includes(state.settings.dialogueStyle)
+      ? state.settings.dialogueStyle
+      : defaults.dialogueStyle;
+    state.settings.dialogueStyle = style;
+    elements.stage.dataset.dialogueStyle = style;
+    $('#dialogue-style').value = style;
   }
 
   function scheduleAutoAdvance(delay) {
@@ -344,6 +386,7 @@
     renderProgress();
     if (log) appendTranscript(speaker, ko, ja);
     playVoice(event.voice);
+    syncVoiceReplayButton();
   }
 
   function renderStill(event) {
@@ -357,6 +400,7 @@
     elements.choicePanel.hidden = true;
     renderCharacter(null);
     renderProgress();
+    syncVoiceReplayButton();
     if (state.auto) scheduleAutoAdvance(2800);
   }
 
@@ -375,6 +419,7 @@
       elements.choiceList.append(button);
     });
     renderProgress();
+    syncVoiceReplayButton();
   }
 
   function renderCurrent(log = true) {
@@ -476,6 +521,7 @@
     elements.dialoguePanel.hidden = true;
     elements.choicePanel.hidden = true;
     elements.complete.hidden = false;
+    syncVoiceReplayButton();
     elements.completeTitle.textContent = state.story.title.ko;
     const next = nextReadingStory();
     elements.nextStory.hidden = !next;
@@ -507,6 +553,7 @@
     elements.nextStory.disabled = false;
     elements.choicePanel.hidden = true;
     renderLog();
+    syncVoiceReplayButton();
   }
 
   function startStory(id, updateHash = true) {
@@ -634,6 +681,7 @@
     $('#voice-volume').value = state.settings.voiceVolume;
     $('#bgm-volume-output').value = `${state.settings.bgmVolume}%`;
     $('#voice-volume-output').value = `${state.settings.voiceVolume}%`;
+    syncDialogueStyle();
     $('#show-original').checked = state.settings.showOriginal;
     $('#autoplay-voice').checked = state.settings.autoplayVoice;
     $('#toggle-bgm').classList.toggle('is-active', state.settings.bgmEnabled);
@@ -641,6 +689,8 @@
     $('#toggle-voice').classList.toggle('is-active', state.settings.voiceEnabled);
     $('#toggle-voice').setAttribute('aria-pressed', String(state.settings.voiceEnabled));
     $('#toggle-auto').setAttribute('aria-pressed', String(state.auto));
+    syncDialogueVisibility();
+    syncVoiceReplayButton();
     if (state.currentEvent && ['talk', 'player'].includes(state.currentEvent.type)) renderCurrent(false);
   }
 
@@ -659,6 +709,12 @@
     syncControls();
   }
 
+  function toggleDialogue() {
+    state.settings.dialogueVisible = !state.settings.dialogueVisible;
+    saveSettings();
+    syncControls();
+  }
+
   function toggleAuto() {
     state.auto = !state.auto;
     syncControls();
@@ -669,7 +725,7 @@
   function bindEvents() {
     $$('.story-tab').forEach((tab) => tab.addEventListener('click', () => setCategory(tab.dataset.category)));
     elements.search.addEventListener('input', renderStoryList);
-    $('#open-library').addEventListener('click', () => setSidebar(true));
+    elements.openLibrary.addEventListener('click', () => setSidebar(elements.app.dataset.sidebar !== 'open'));
     $('#close-library').addEventListener('click', () => setSidebar(false));
     $('#sidebar-scrim').addEventListener('click', () => setSidebar(false));
     $('#open-first-story').addEventListener('click', () => startStory(state.readingStories[0]?.id));
@@ -681,6 +737,8 @@
     });
     $('#toggle-bgm').addEventListener('click', toggleBgm);
     $('#toggle-voice').addEventListener('click', toggleVoice);
+    elements.replayVoice.addEventListener('click', replayVoice);
+    elements.toggleDialogue.addEventListener('click', toggleDialogue);
     $('#open-settings').addEventListener('click', () => elements.settingsDialog.showModal());
     $('#open-log').addEventListener('click', () => { renderLog(); elements.logDialog.showModal(); });
     $('#replay-story').addEventListener('click', () => startStory(state.story.id));
@@ -715,6 +773,17 @@
       state.settings.autoplayVoice = event.target.checked;
       saveSettings();
     });
+    $('#dialogue-style').addEventListener('change', (event) => {
+      state.settings.dialogueStyle = event.target.value;
+      saveSettings();
+      syncControls();
+    });
+
+    elements.stage.addEventListener('click', (event) => {
+      if (state.settings.dialogueVisible) return;
+      if (event.target.closest?.('button, .reader-bar, .choice-panel, .story-complete')) return;
+      goNext();
+    });
 
     voiceAudio.addEventListener('ended', () => {
       elements.voiceIndicator.classList.remove('is-playing');
@@ -736,8 +805,13 @@
       }
     });
 
+    let wasCompact = isCompact();
     window.addEventListener('resize', () => {
-      if (!isCompact()) setSidebar(true);
+      const compact = isCompact();
+      if (compact !== wasCompact) {
+        setSidebar(!compact);
+        wasCompact = compact;
+      }
     });
   }
 

@@ -69,15 +69,17 @@
         <img id="character-image" class="character-image" alt="" hidden>
 
         <header class="reader-bar">
-          <button id="open-library" class="reader-bar__menu icon-button" type="button" aria-label="스토리 목록 열기">☰</button>
+          <button id="open-library" class="reader-bar__menu icon-button" type="button" aria-label="스토리 목록 닫기" aria-expanded="true">☰</button>
           <div class="reader-bar__title">
             <span id="story-kind">메인 · 2장</span>
             <strong id="story-title">만남</strong>
           </div>
           <div class="reader-bar__actions">
-            <button id="toggle-bgm" class="pill-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">♪</span><span class="button-label">BGM</span></button>
-            <button id="toggle-voice" class="pill-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">◖</span><span class="button-label">음성</span></button>
-            <button id="open-log" class="pill-button" type="button"><span aria-hidden="true">☷</span><span class="button-label">로그</span></button>
+            <button id="toggle-bgm" class="pill-button bgm-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">♪</span><span class="button-label">BGM</span></button>
+            <button id="toggle-voice" class="pill-button voice-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">◖</span><span class="button-label">음성</span></button>
+            <button id="replay-voice" class="pill-button voice-replay-button" type="button" aria-label="현재 대사 음성 다시 재생" disabled><span aria-hidden="true">↻</span><span class="button-label">다시 듣기</span></button>
+            <button id="toggle-dialogue" class="pill-button dialogue-toggle-button is-active" type="button" aria-pressed="true"><span aria-hidden="true">▣</span><span class="button-label">대사</span></button>
+            <button id="open-log" class="pill-button log-button" type="button"><span aria-hidden="true">☷</span><span class="button-label">로그</span></button>
             <button id="open-settings" class="icon-button" type="button" aria-label="설정">⚙</button>
             <button id="toggle-fullscreen" class="icon-button" type="button" aria-label="전체 화면">⛶</button>
           </div>
@@ -126,6 +128,11 @@
         <button class="icon-button" value="close" aria-label="설정 닫기">×</button>
       </header>
       <label class="field-label">주인공 이름<input id="player-name" type="text" maxlength="16" value="주인공"></label>
+      <label class="field-label">텍스트 표시 방식<select id="dialogue-style">
+        <option value="novel">비주얼 노벨 방식</option>
+        <option value="cinema">영화 자막 방식</option>
+        <option value="youtube">유튜브 자막 방식</option>
+      </select></label>
       <label class="range-label"><span>배경 음악 <output id="bgm-volume-output">45%</output></span><input id="bgm-volume" type="range" min="0" max="100" value="45"></label>
       <label class="range-label"><span>캐릭터 음성 <output id="voice-volume-output">85%</output></span><input id="voice-volume" type="range" min="0" max="100" value="85"></label>
       <label class="switch-label"><span><strong>일본어 원문 함께 보기</strong><small>한국어 번역 아래 원문을 표시합니다.</small></span><input id="show-original" type="checkbox" role="switch"></label>
